@@ -28,6 +28,21 @@ export class ViewManager {
         const canvas = this.ctx.canvas;
         view.resize(canvas.width, canvas.height);
         view.draw(points, animTick, selectedPoint);
+        this.drawTouchPointsInfo();
+    }
+    /** 우측 상단: 최대 동시 터치 지점 표시 */
+    drawTouchPointsInfo() {
+        const canvas = this.ctx.canvas;
+        const text = `이 브라우저의 최대 동시 터치 지점: ${navigator.maxTouchPoints}`;
+        const padding = 10;
+        const fontSize = 11;
+        this.ctx.save();
+        this.ctx.font = `${fontSize}px sans-serif`;
+        this.ctx.textAlign = 'right';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        this.ctx.fillText(text, canvas.width - padding, padding);
+        this.ctx.restore();
     }
     /** 캔버스 리사이즈 시 모든 뷰 업데이트 */
     resize(width, height) {
