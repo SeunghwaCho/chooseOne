@@ -35,19 +35,6 @@ export class ViewManager {
         const { logicalW, logicalH } = this.logicalSize();
         view.resize(logicalW, logicalH);
         view.draw(points, animTick, selectedPoint, Date.now() - this.stateEnterTime);
-        this.drawTouchPointsInfo(logicalW);
-    }
-    /** 우측 상단: 최대 동시 터치 지점 표시 */
-    drawTouchPointsInfo(logicalW) {
-        const text = `이 브라우저의 최대 동시 터치 지점: ${navigator.maxTouchPoints}`;
-        const padding = 10;
-        this.ctx.save();
-        this.ctx.font = '11px sans-serif';
-        this.ctx.textAlign = 'right';
-        this.ctx.textBaseline = 'top';
-        this.ctx.fillStyle = 'rgba(255,255,255,0.45)';
-        this.ctx.fillText(text, logicalW - padding, padding);
-        this.ctx.restore();
     }
     /** 논리(CSS) 픽셀 크기 반환 */
     logicalSize() {
