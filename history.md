@@ -1,5 +1,15 @@
 # 개발 이력
 
+## 2026-04-16 - JS 번들링 적용 (단일 파일 출력)
+
+### 작업 내용
+- esbuild를 devDependency로 추가하여 JS 번들링 도입
+- 빌드 시 13개 JS 파일 → `dist/bundle.js` 단일 파일로 통합 (27.2kb)
+- `tsc --noEmit`으로 타입 체크 유지, 번들링은 esbuild가 담당
+- `index.html`: `type="module"` 제거, `dist/bundle.js` 단일 참조로 변경
+- `build.sh`: 릴리즈 시 `dist/bundle.js`만 복사하도록 간소화
+- 기존 `dist/` 서브폴더(core/manager/model/state/view) 및 `main.js` 제거
+
 ## 2026-04-16 - 초기 프로젝트 구조 및 핵심 구현
 
 ### 작업 내용

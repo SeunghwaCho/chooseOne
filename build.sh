@@ -20,7 +20,8 @@ mkdir -p "$RELEASE_DIR"
 # 3. 실행 필수 파일만 복사
 echo "[3/3] 파일 복사 중..."
 cp index.html "$RELEASE_DIR/"
-cp -r dist/ "$RELEASE_DIR/dist/"
+mkdir -p "$RELEASE_DIR/dist"
+cp dist/bundle.js "$RELEASE_DIR/dist/"
 
 echo ""
 echo "=== 빌드 완료 ==="

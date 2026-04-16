@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "Choose One - 멀티터치 뽑기 게임 (HTML5 Canvas + TypeScript)",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
+    "build": "tsc --noEmit && esbuild src/main.ts --bundle --outfile=dist/bundle.js --target=es2020",
+    "watch": "esbuild src/main.ts --bundle --outfile=dist/bundle.js --target=es2020 --watch",
     "serve": "python3 -m http.server 8001"
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "typescript": "^5.4.0"
   }
 }
