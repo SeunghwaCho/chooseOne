@@ -4,7 +4,7 @@ import type { CPoint } from '../model/CPoint.js';
 /** 선택 중 상태: 손가락을 유지하며 카운트다운 */
 export class SelectingState implements IState {
   private tickCount = 0;
-  private static readonly REQUIRED_TICKS = 3; // 800ms × 3 = 2.4초 유지 후 알림 전환
+  private static readonly REQUIRED_TICKS = 2; // 800ms × 2 = 1.6초 유지 후 알림 전환
 
   constructor(private ctx: StateContext) {}
 

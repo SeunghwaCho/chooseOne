@@ -38,4 +38,4 @@ export class SelectingState {
         return 'SelectingState';
     }
 }
-SelectingState.REQUIRED_TICKS = 3; // 800ms × 3 = 2.4초 유지 후 알림 전환
+SelectingState.REQUIRED_TICKS = 2; // 800ms × 2 = 1.6초 유지 후 알림 전환
