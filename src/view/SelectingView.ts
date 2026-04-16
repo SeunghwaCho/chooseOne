@@ -78,15 +78,6 @@ export class SelectingView extends BaseView {
       '#aaaaff'
     );
 
-    // ── "개 손가락" 부제목 ──
-    this.drawCenteredText(
-      '개 손가락',
-      cx,
-      cy + ringR * 0.55,
-      `${Math.round(ringR * 0.38)}px sans-serif`,
-      'rgba(200,200,255,0.75)'
-    );
-
     // ── 하단 안내 문구 ──
     const guide = count < 2
       ? '⚠️ 손가락이 부족합니다'

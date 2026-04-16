@@ -477,13 +477,6 @@
         "#ffffff",
         "#aaaaff"
       );
-      this.drawCenteredText(
-        "\uAC1C \uC190\uAC00\uB77D",
-        cx,
-        cy + ringR * 0.55,
-        `${Math.round(ringR * 0.38)}px sans-serif`,
-        "rgba(200,200,255,0.75)"
-      );
       const guide = count < 2 ? "\u26A0\uFE0F \uC190\uAC00\uB77D\uC774 \uBD80\uC871\uD569\uB2C8\uB2E4" : "\u{1F91A} \uC190\uAC00\uB77D\uC744 \uC720\uC9C0\uD558\uC138\uC694...";
       this.drawCenteredText(
         guide,
