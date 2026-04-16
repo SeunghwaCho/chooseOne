@@ -41,32 +41,34 @@ export class ViewManager implements ViewObserver {
   /** 매 프레임 현재 상태 뷰 렌더링 */
   draw(points: CPoint[], animTick: number, selectedPoint: CPoint | null): void {
     const view = this.views[this.currentStateType];
-    const canvas = this.ctx.canvas;
-    view.resize(canvas.width, canvas.height);
+
+    // canvas.width/height 는 물리 픽셀, 뷰에는 논리 픽셀(CSS px) 전달
+    const { logicalW, logicalH } = this.logicalSize();
+    view.resize(logicalW, logicalH);
     view.draw(points, animTick, selectedPoint, this.gameLoop.getTickProgress());
-    this.drawTouchPointsInfo();
+    this.drawTouchPointsInfo(logicalW);
   }
 
   /** 우측 상단: 최대 동시 터치 지점 표시 */
-  private drawTouchPointsInfo(): void {
-    const canvas = this.ctx.canvas;
+  private drawTouchPointsInfo(logicalW: number): void {
     const text = `이 브라우저의 최대 동시 터치 지점: ${navigator.maxTouchPoints}`;
     const padding = 10;
-    const fontSize = 11;
 
     this.ctx.save();
-    this.ctx.font = `${fontSize}px sans-serif`;
+    this.ctx.font = '11px sans-serif';
     this.ctx.textAlign = 'right';
     this.ctx.textBaseline = 'top';
     this.ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    this.ctx.fillText(text, canvas.width - padding, padding);
+    this.ctx.fillText(text, logicalW - padding, padding);
     this.ctx.restore();
   }
 
-  /** 캔버스 리사이즈 시 모든 뷰 업데이트 */
-  resize(width: number, height: number): void {
-    for (const view of this.views) {
-      view.resize(width, height);
-    }
+  /** 논리(CSS) 픽셀 크기 반환 */
+  private logicalSize(): { logicalW: number; logicalH: number } {
+    const dpr = window.devicePixelRatio || 1;
+    return {
+      logicalW: this.ctx.canvas.width  / dpr,
+      logicalH: this.ctx.canvas.height / dpr,
+    };
   }
 }

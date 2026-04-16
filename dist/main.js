@@ -8,8 +8,18 @@ function initCanvas() {
     if (!ctx)
         throw new Error('Canvas 2D context를 가져올 수 없습니다.');
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        const dpr = window.devicePixelRatio || 1;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        // 물리 픽셀 크기로 버퍼 설정
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+        // CSS 표시 크기는 논리 픽셀 유지
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+        // canvas.width 변경 시 컨텍스트 변환이 리셋되므로 DPR 스케일 재적용
+        // (ctx는 위에서 null 체크 완료, 중첩 함수에서 ! 단언 사용)
+        ctx.scale(dpr, dpr);
     }
     window.addEventListener('resize', resize);
     resize();
@@ -85,10 +95,7 @@ function main() {
     const viewManager = new ViewManager(ctx, gameLoop);
     // 상태 변경 시 뷰 알림 연결
     manager.setViewObserver(viewManager);
-    // 리사이즈 시 뷰도 갱신
-    window.addEventListener('resize', () => {
-        viewManager.resize(canvas.width, canvas.height);
-    });
+    // ViewManager는 draw() 호출마다 논리 크기를 자체 계산하므로 별도 resize 불필요
     bindInputEvents(canvas, manager);
     gameLoop.start();
     console.log('🎯 Choose One 게임 시작!');
