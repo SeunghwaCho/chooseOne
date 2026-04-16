@@ -2,10 +2,10 @@
 export class SelectingState {
     constructor(ctx) {
         this.ctx = ctx;
-        this.tickCount = 0;
+        this.enterTime = 0;
     }
     init() {
-        this.tickCount = 0;
+        this.enterTime = Date.now();
     }
     tick() {
         const points = this.ctx.getPoints();
@@ -14,9 +14,8 @@ export class SelectingState {
             this.ctx.transit(0 /* StateType.IDLE */);
             return;
         }
-        this.tickCount++;
-        // 충분한 시간 유지 시 알림 상태로
-        if (this.tickCount >= SelectingState.REQUIRED_TICKS) {
+        // 홀드 시간이 지났으면 알림 상태로
+        if (Date.now() - this.enterTime >= SelectingState.HOLD_MS) {
             this.ctx.transit(2 /* StateType.ALERTING */);
         }
     }
@@ -26,16 +25,13 @@ export class SelectingState {
             this.ctx.transit(0 /* StateType.IDLE */);
         }
         else {
-            // 손가락 추가·제거로 개수가 바뀌었으면 타이머 리셋
-            // (같은 상태로 재진입 → init() 호출 → tickCount = 0)
+            // 손가락 추가·제거 시 타이머 리셋 (같은 상태로 재진입 → init() 호출)
             this.ctx.transit(1 /* StateType.SELECTING */);
         }
-    }
-    getTickCount() {
-        return this.tickCount;
     }
     toString() {
         return 'SelectingState';
     }
 }
-SelectingState.REQUIRED_TICKS = 2; // 800ms × 2 = 1.6초 유지 후 알림 전환
+/** 홀드 시간 (ms) — 틱 간격과 무관하게 실제 경과 시간으로 판단 */
+SelectingState.HOLD_MS = 1200;

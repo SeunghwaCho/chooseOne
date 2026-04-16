@@ -61,5 +61,4 @@ export class SelectingView extends BaseView {
         this.drawCenteredText(guide, cx, cy + ringR + 28, `${Math.round(this.width * 0.028)}px sans-serif`, count < 2 ? 'rgba(255,120,120,0.9)' : 'rgba(180,180,255,0.8)');
     }
 }
-// REQUIRED_TICKS(2) × TICK_INTERVAL(800ms) = 1600ms
-SelectingView.HOLD_MS = 1600;
+SelectingView.HOLD_MS = 1200; // SelectingState.HOLD_MS 와 동일하게 유지
