@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>State Machine 테스트</title>
+  <style>
+    body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+    .pass { color: #44ff44; }
+    .fail { color: #ff4444; }
+    h1 { color: #8888ff; margin-bottom: 20px; }
+    .test-result { margin: 5px 0; }
+    #summary { margin-top: 20px; font-size: 1.2em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Choose One - 상태 머신 테스트</h1>
+  <div id="results"></div>
+  <div id="summary"></div>
+
+  <script type="module">
+    // 테스트 유틸리티
+    let passed = 0;
+    let failed = 0;
+    const results = document.getElementById('results');
+
+    function assert(condition, message) {
+      const div = document.createElement('div');
+      div.className = 'test-result';
+      if (condition) {
+        div.innerHTML = `<span class="pass">✅ PASS</span>: ${message}`;
+        passed++;
+      } else {
+        div.innerHTML = `<span class="fail">❌ FAIL</span>: ${message}`;
+        failed++;
+      }
+      results.appendChild(div);
+    }
+
+    // 동적 import
+    const { ChooseManagerImpl } = await import('../dist/manager/ChooseManagerImpl.js');
+
+    // === 테스트 1: 초기 상태는 IDLE ===
+    {
+      const manager = new ChooseManagerImpl();
+      assert(manager.getCurrentStateType() === 0, '초기 상태는 IDLE(0)');
+    }
+
+    // === 테스트 2: 포인트 추가 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      assert(manager.getPoints().length === 1, '포인트 추가 후 길이 1');
+      assert(manager.getPoints()[0].x === 100, '포인트 X 좌표 100');
+      assert(manager.getPoints()[0].y === 200, '포인트 Y 좌표 200');
+    }
+
+    // === 테스트 3: 포인트 제거 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.removePoint(1);
+      assert(manager.getPoints().length === 0, '포인트 제거 후 길이 0');
+    }
+
+    // === 테스트 4: 포인트 업데이트 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.updatePoint(1, 300, 400);
+      assert(manager.getPoints()[0].x === 300, '포인트 X 갱신 300');
+      assert(manager.getPoints()[0].y === 400, '포인트 Y 갱신 400');
+    }
+
+    // === 테스트 5: 2개 포인트 + 틱 → SELECTING 전환 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.addPoint(2, 300, 400);
+      manager.tick(); // IDLE tick → SELECTING 전환
+      assert(manager.getCurrentStateType() === 1, '2포인트 틱 후 SELECTING(1)');
+    }
+
+    // === 테스트 6: SELECTING 후 틱 → ALERTING 전환 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.addPoint(2, 300, 400);
+      manager.tick(); // IDLE → SELECTING
+      manager.tick(); // SELECTING → ALERTING
+      assert(manager.getCurrentStateType() === 2, '틱 2회 후 ALERTING(2)');
+    }
+
+    // === 테스트 7: ALERTING 후 틱 → SELECTED 전환 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.addPoint(2, 300, 400);
+      manager.tick(); // IDLE → SELECTING
+      manager.tick(); // SELECTING → ALERTING
+      manager.tick(); // ALERTING → SELECTED
+      assert(manager.getCurrentStateType() === 3, '틱 3회 후 SELECTED(3)');
+    }
+
+    // === 테스트 8: SELECTED 상태에서 선택된 포인트 존재 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.addPoint(2, 300, 400);
+      manager.tick();
+      manager.tick();
+      manager.tick();
+      const selected = manager.getSelectedPoint();
+      assert(selected !== null, 'SELECTED 상태에서 선택 포인트 존재');
+      assert(
+        selected?.id === 1 || selected?.id === 2,
+        '선택 포인트가 추가된 포인트 중 하나'
+      );
+    }
+
+    // === 테스트 9: 색상 고유 할당 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.addPoint(2, 300, 400);
+      const pts = manager.getPoints();
+      assert(pts[0].color !== pts[1].color, '다른 포인트는 다른 색상');
+    }
+
+    // === 테스트 10: SELECTED → IDLE 복귀 ===
+    {
+      const manager = new ChooseManagerImpl();
+      manager.addPoint(1, 100, 200);
+      manager.addPoint(2, 300, 400);
+      manager.tick(); // → SELECTING
+      manager.tick(); // → ALERTING
+      manager.tick(); // → SELECTED
+      manager.tick(); // SELECTED tick 1
+      manager.tick(); // SELECTED tick 2
+      manager.tick(); // SELECTED tick 3 → IDLE
+      assert(manager.getCurrentStateType() === 0, '3틱 후 IDLE 복귀');
+    }
+
+    // === 결과 요약 ===
+    const summary = document.getElementById('summary');
+    const total = passed + failed;
+    summary.innerHTML = `
+      <hr style="border-color:#444;margin:20px 0">
+      결과: <span class="${failed === 0 ? 'pass' : 'fail'}">${passed}/${total} 통과</span>
+      ${failed > 0 ? `<br><span class="fail">${failed}개 실패</span>` : ''}
+    `;
+  </script>
+</body>
+</html>
