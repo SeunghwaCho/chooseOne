@@ -5,11 +5,13 @@
   <title>State Machine 테스트</title>
   <style>
     body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
-    .pass { color: #44ff44; }
-    .fail { color: #ff4444; }
-    h1 { color: #8888ff; margin-bottom: 20px; }
-    .test-result { margin: 5px 0; }
-    #summary { margin-top: 20px; font-size: 1.2em; font-weight: bold; }
+    h1   { color: #8888ff; margin-bottom: 20px; }
+    h2   { color: #aaaaff; margin: 20px 0 8px; font-size: 0.95em; border-bottom: 1px solid #333; padding-bottom: 4px; }
+    .pass  { color: #44ff44; }
+    .fail  { color: #ff4444; }
+    .error { color: #ffaa44; }
+    .test-result { margin: 3px 0; }
+    #summary { margin-top: 24px; font-size: 1.15em; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -18,10 +20,18 @@
   <div id="summary"></div>
 
   <script type="module">
-    // 테스트 유틸리티
+    /* ───────────────────────────────────────────
+       테스트 프레임워크
+    ─────────────────────────────────────────── */
     let passed = 0;
     let failed = 0;
     const results = document.getElementById('results');
+
+    function section(title) {
+      const h = document.createElement('h2');
+      h.textContent = title;
+      results.appendChild(h);
+    }
 
     function assert(condition, message) {
       const div = document.createElement('div');
@@ -36,117 +46,444 @@
       results.appendChild(div);
     }
 
-    // 동적 import
-    const { ChooseManagerImpl } = await import('../dist/manager/ChooseManagerImpl.js');
-
-    // === 테스트 1: 초기 상태는 IDLE ===
-    {
-      const manager = new ChooseManagerImpl();
-      assert(manager.getCurrentStateType() === 0, '초기 상태는 IDLE(0)');
+    function assertThrows(fn, message) {
+      try { fn(); assert(false, `예외 미발생 - ${message}`); }
+      catch (_) { assert(true, message); }
     }
 
-    // === 테스트 2: 포인트 추가 ===
-    {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      assert(manager.getPoints().length === 1, '포인트 추가 후 길이 1');
-      assert(manager.getPoints()[0].x === 100, '포인트 X 좌표 100');
-      assert(manager.getPoints()[0].y === 200, '포인트 Y 좌표 200');
+    function assertNoThrow(fn, message) {
+      try { fn(); assert(true, message); }
+      catch (e) {
+        const div = document.createElement('div');
+        div.className = 'test-result';
+        div.innerHTML = `<span class="error">💥 ERROR</span>: ${message} → ${e}`;
+        results.appendChild(div);
+        failed++;
+      }
     }
 
-    // === 테스트 3: 포인트 제거 ===
-    {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      manager.removePoint(1);
-      assert(manager.getPoints().length === 0, '포인트 제거 후 길이 0');
-    }
-
-    // === 테스트 4: 포인트 업데이트 ===
-    {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      manager.updatePoint(1, 300, 400);
-      assert(manager.getPoints()[0].x === 300, '포인트 X 갱신 300');
-      assert(manager.getPoints()[0].y === 400, '포인트 Y 갱신 400');
-    }
-
-    // === 테스트 5: 2개 포인트 + 틱 → SELECTING 전환 ===
-    {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      manager.addPoint(2, 300, 400);
-      manager.tick(); // IDLE tick → SELECTING 전환
-      assert(manager.getCurrentStateType() === 1, '2포인트 틱 후 SELECTING(1)');
-    }
-
-    // === 테스트 6: SELECTING 후 틱 → ALERTING 전환 ===
-    {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      manager.addPoint(2, 300, 400);
-      manager.tick(); // IDLE → SELECTING
-      manager.tick(); // SELECTING → ALERTING
-      assert(manager.getCurrentStateType() === 2, '틱 2회 후 ALERTING(2)');
-    }
-
-    // === 테스트 7: ALERTING 후 틱 → SELECTED 전환 ===
-    {
-      const manager = new ChooseManagerImpl();
+    /** 상태를 SELECTED까지 빠르게 진행하는 헬퍼 */
+    function advanceToSelected(manager) {
       manager.addPoint(1, 100, 200);
       manager.addPoint(2, 300, 400);
       manager.tick(); // IDLE → SELECTING
       manager.tick(); // SELECTING → ALERTING
       manager.tick(); // ALERTING → SELECTED
-      assert(manager.getCurrentStateType() === 3, '틱 3회 후 SELECTED(3)');
     }
 
-    // === 테스트 8: SELECTED 상태에서 선택된 포인트 존재 ===
+    /* ───────────────────────────────────────────
+       모듈 로드
+    ─────────────────────────────────────────── */
+    const { ChooseManagerImpl } = await import('../dist/manager/ChooseManagerImpl.js');
+    const { CPoint }            = await import('../dist/model/CPoint.js');
+
+    /* ═══════════════════════════════════════════
+       그룹 1: 기존 기본 상태 전환 (원본 10개)
+    ═══════════════════════════════════════════ */
+    section('① 기본 상태 전환');
+
     {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      manager.addPoint(2, 300, 400);
-      manager.tick();
-      manager.tick();
-      manager.tick();
-      const selected = manager.getSelectedPoint();
-      assert(selected !== null, 'SELECTED 상태에서 선택 포인트 존재');
-      assert(
-        selected?.id === 1 || selected?.id === 2,
-        '선택 포인트가 추가된 포인트 중 하나'
-      );
+      const m = new ChooseManagerImpl();
+      assert(m.getCurrentStateType() === 0, '초기 상태는 IDLE(0)');
     }
 
-    // === 테스트 9: 색상 고유 할당 ===
     {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      manager.addPoint(2, 300, 400);
-      const pts = manager.getPoints();
-      assert(pts[0].color !== pts[1].color, '다른 포인트는 다른 색상');
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      assert(m.getPoints().length === 1, '포인트 추가 후 길이 1');
+      assert(m.getPoints()[0].x === 100, '포인트 X 좌표 100');
+      assert(m.getPoints()[0].y === 200, '포인트 Y 좌표 200');
     }
 
-    // === 테스트 10: SELECTED → IDLE 복귀 ===
     {
-      const manager = new ChooseManagerImpl();
-      manager.addPoint(1, 100, 200);
-      manager.addPoint(2, 300, 400);
-      manager.tick(); // → SELECTING
-      manager.tick(); // → ALERTING
-      manager.tick(); // → SELECTED
-      manager.tick(); // SELECTED tick 1
-      manager.tick(); // SELECTED tick 2
-      manager.tick(); // SELECTED tick 3 → IDLE
-      assert(manager.getCurrentStateType() === 0, '3틱 후 IDLE 복귀');
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.removePoint(1);
+      assert(m.getPoints().length === 0, '포인트 제거 후 길이 0');
     }
 
-    // === 결과 요약 ===
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.updatePoint(1, 300, 400);
+      assert(m.getPoints()[0].x === 300, '포인트 X 갱신 300');
+      assert(m.getPoints()[0].y === 400, '포인트 Y 갱신 400');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick();
+      assert(m.getCurrentStateType() === 1, '2포인트 + 틱 → SELECTING(1)');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick(); m.tick();
+      assert(m.getCurrentStateType() === 2, '틱 2회 → ALERTING(2)');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick(); m.tick(); m.tick();
+      assert(m.getCurrentStateType() === 3, '틱 3회 → SELECTED(3)');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      advanceToSelected(m);
+      const sel = m.getSelectedPoint();
+      assert(sel !== null, 'SELECTED: 선택 포인트 존재');
+      assert(sel?.id === 1 || sel?.id === 2, '선택 포인트가 추가된 포인트 중 하나');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      const pts = m.getPoints();
+      assert(pts[0].color !== pts[1].color, '서로 다른 포인트는 다른 색상');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick(); m.tick(); m.tick(); // → SELECTED
+      m.tick(); m.tick(); m.tick(); // 3틱 후 IDLE 복귀
+      assert(m.getCurrentStateType() === 0, 'SELECTED 3틱 후 IDLE 복귀');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 2: CPoint 모델
+    ═══════════════════════════════════════════ */
+    section('② CPoint 모델');
+
+    {
+      // 3-4-5 직각삼각형
+      const a = new CPoint(1, 0, 0, '#fff', 0);
+      const b = new CPoint(2, 3, 4, '#fff', 1);
+      assert(a.distanceTo(b) === 5, 'distanceTo: 3-4-5 직각삼각형 → 5');
+    }
+
+    {
+      const a = new CPoint(1, 50, 80, '#fff', 0);
+      assert(a.distanceTo(a) === 0, 'distanceTo: 같은 포인트 → 0');
+    }
+
+    {
+      const a = new CPoint(1, 0, 0, '#fff', 0);
+      const b = new CPoint(2, 6, 8, '#fff', 1);
+      assert(a.distanceTo(b) === b.distanceTo(a), 'distanceTo: 대칭성 (A→B == B→A)');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 0, 0);
+      const pt = m.getPoints()[0];
+      assert(pt.colorIndex >= 0 && pt.colorIndex <= 19, 'colorIndex 범위 0~19');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 0, 0);
+      const pt = m.getPoints()[0];
+      assert(typeof pt.color === 'string' && pt.color.startsWith('#'), '색상은 #으로 시작하는 문자열');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 3: IDLE 경계 조건
+    ═══════════════════════════════════════════ */
+    section('③ IDLE 경계 조건');
+
+    {
+      const m = new ChooseManagerImpl();
+      m.tick();
+      assert(m.getCurrentStateType() === 0, '포인트 0개: 틱 후 IDLE 유지');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.tick();
+      assert(m.getCurrentStateType() === 0, '포인트 1개: 틱 후 IDLE 유지 (2개 미만)');
+    }
+
+    {
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.addPoint(3, 500, 600);
+      m.tick();
+      assert(m.getCurrentStateType() === 1, '포인트 3개: 틱 후 SELECTING 전환');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 4: SELECTING 인터럽트
+    ═══════════════════════════════════════════ */
+    section('④ SELECTING 인터럽트');
+
+    {
+      // SELECTING 진입 후 포인트 1개 제거 → updatePointList → IDLE
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick(); // IDLE → SELECTING
+      assert(m.getCurrentStateType() === 1, 'SELECTING 진입 확인');
+      m.removePoint(2); // 1개 제거 → 즉시 IDLE
+      assert(m.getCurrentStateType() === 0, 'SELECTING 중 포인트 1개로 감소 → 즉시 IDLE');
+    }
+
+    {
+      // SELECTING 중 모든 포인트 제거
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick(); // → SELECTING
+      m.removePoint(1);
+      m.removePoint(2);
+      assert(m.getCurrentStateType() === 0, 'SELECTING 중 전체 포인트 제거 → IDLE');
+    }
+
+    {
+      // 인터럽트 후 재시도 가능
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick(); // → SELECTING
+      m.removePoint(2); // → IDLE
+      m.addPoint(2, 300, 400); // 다시 추가
+      m.tick(); // → SELECTING 재진입
+      assert(m.getCurrentStateType() === 1, '인터럽트 후 재시도 → SELECTING 재진입');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 5: 포인트 관리 엣지 케이스
+    ═══════════════════════════════════════════ */
+    section('⑤ 포인트 관리 엣지 케이스');
+
+    {
+      // 없는 ID 업데이트: 크래시 없음, 포인트 수 변화 없음
+      const m = new ChooseManagerImpl();
+      assertNoThrow(() => m.updatePoint(999, 100, 200), '없는 ID updatePoint: 크래시 없음');
+      assert(m.getPoints().length === 0, '없는 ID updatePoint 후 포인트 수 0 유지');
+    }
+
+    {
+      // 없는 ID 제거: 크래시 없음
+      const m = new ChooseManagerImpl();
+      assertNoThrow(() => m.removePoint(999), '없는 ID removePoint: 크래시 없음');
+    }
+
+    {
+      // 동일 ID 중복 추가: 두 번째 무시
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 100, 200);
+      m.addPoint(1, 300, 400); // 중복
+      assert(m.getPoints().length === 1, '동일 ID 중복 추가: 포인트 수 1 유지');
+      assert(m.getPoints()[0].x === 100, '중복 추가 시 원래 좌표 유지');
+    }
+
+    {
+      // 포인트 추가 후 좌표 업데이트 정확성
+      const m = new ChooseManagerImpl();
+      m.addPoint(5, 0, 0);
+      m.updatePoint(5, 999, 888);
+      const pt = m.getPoints()[0];
+      assert(pt.x === 999 && pt.y === 888, 'updatePoint: 정확한 좌표 반영');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 6: 색상 관리
+    ═══════════════════════════════════════════ */
+    section('⑥ 색상 관리');
+
+    {
+      // 10개 포인트 모두 다른 색상
+      const m = new ChooseManagerImpl();
+      for (let i = 1; i <= 10; i++) m.addPoint(i, i * 10, i * 10);
+      const colors = m.getPoints().map(p => p.color);
+      const unique = new Set(colors);
+      assert(unique.size === 10, '10개 포인트 모두 다른 색상 할당');
+    }
+
+    {
+      // 포인트 제거 후 해제된 colorIndex 재사용
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 0, 0);
+      const firstIndex = m.getPoints()[0].colorIndex;
+      m.removePoint(1);
+      m.addPoint(2, 0, 0);
+      const secondIndex = m.getPoints()[0].colorIndex;
+      assert(firstIndex === secondIndex, '포인트 제거 후 새 포인트가 해제된 colorIndex 재사용');
+    }
+
+    {
+      // 20개 포인트 모두 다른 색상
+      const m = new ChooseManagerImpl();
+      for (let i = 1; i <= 20; i++) m.addPoint(i, i, i);
+      const colors = m.getPoints().map(p => p.color);
+      const unique = new Set(colors);
+      assert(unique.size === 20, '최대 20개 포인트 모두 다른 색상');
+    }
+
+    {
+      // colorIndex는 항상 0~19 범위
+      const m = new ChooseManagerImpl();
+      for (let i = 1; i <= 20; i++) m.addPoint(i, i, i);
+      const allInRange = m.getPoints().every(p => p.colorIndex >= 0 && p.colorIndex <= 19);
+      assert(allInRange, '20개 포인트 colorIndex 모두 0~19 범위');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 7: 옵저버 패턴
+    ═══════════════════════════════════════════ */
+    section('⑦ 옵저버 패턴');
+
+    {
+      // 옵저버 등록 시 상태 전환 알림 수신
+      const m = new ChooseManagerImpl();
+      const notifications = [];
+      m.setViewObserver({ onStateChanged: (s) => notifications.push(s) });
+      m.addPoint(1, 100, 200);
+      m.addPoint(2, 300, 400);
+      m.tick(); // IDLE → SELECTING(1)
+      assert(notifications.length === 1, '첫 전환 시 옵저버 1회 호출');
+      assert(notifications[0] === 1, '옵저버에 SELECTING(1) 전달');
+    }
+
+    {
+      // 옵저버에 순서대로 올바른 상태 전달
+      const m = new ChooseManagerImpl();
+      const log = [];
+      m.setViewObserver({ onStateChanged: (s) => log.push(s) });
+      m.addPoint(1, 0, 0);
+      m.addPoint(2, 0, 0);
+      m.tick(); m.tick(); m.tick(); // SELECTING→ALERTING→SELECTED
+      assert(log.length === 3, '3번 전환 시 옵저버 3회 호출');
+      assert(log[0] === 1 && log[1] === 2 && log[2] === 3,
+        `옵저버 순서 SELECTING(1)→ALERTING(2)→SELECTED(3): [${log}]`);
+    }
+
+    {
+      // 옵저버 미등록 시 크래시 없음
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 0, 0);
+      m.addPoint(2, 0, 0);
+      assertNoThrow(() => { m.tick(); m.tick(); m.tick(); },
+        '옵저버 미등록 상태에서 전환: 크래시 없음');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 8: 랜덤 선택 로직
+    ═══════════════════════════════════════════ */
+    section('⑧ 랜덤 선택 로직');
+
+    {
+      const m = new ChooseManagerImpl();
+      assert(m.getSelectedPoint() === null, '초기 selectedPoint는 null');
+    }
+
+    {
+      // 포인트 없을 때 selectRandomPoint → null
+      const m = new ChooseManagerImpl();
+      const result = m.selectRandomPoint();
+      assert(result === null, '포인트 없을 때 selectRandomPoint → null');
+    }
+
+    {
+      // 포인트 1개일 때 항상 그 포인트 선택
+      const m = new ChooseManagerImpl();
+      m.addPoint(7, 50, 50);
+      const selected = m.selectRandomPoint();
+      assert(selected?.id === 7, '포인트 1개: 항상 해당 포인트 선택');
+    }
+
+    {
+      // 반환값이 현재 포인트 목록에 속함 (10회 반복)
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 0, 0);
+      m.addPoint(2, 100, 0);
+      m.addPoint(3, 200, 0);
+      const ids = [1, 2, 3];
+      let allValid = true;
+      for (let i = 0; i < 10; i++) {
+        const s = m.selectRandomPoint();
+        if (!ids.includes(s?.id ?? -1)) { allValid = false; break; }
+      }
+      assert(allValid, 'selectRandomPoint: 10회 시도 모두 현재 포인트 목록에 속함');
+    }
+
+    {
+      // ALERTING 진입 시 selectedPoint 설정됨 (AlertingState.init에서 selectRandomPoint 호출)
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 0, 0);
+      m.addPoint(2, 100, 0);
+      m.tick(); m.tick(); // IDLE → SELECTING → ALERTING
+      assert(m.getSelectedPoint() !== null, 'ALERTING 진입 시 selectedPoint 설정됨');
+    }
+
+    /* ═══════════════════════════════════════════
+       그룹 9: 전체 사이클 반복
+    ═══════════════════════════════════════════ */
+    section('⑨ 전체 사이클 반복');
+
+    {
+      // 완전한 사이클 2회 연속
+      const m = new ChooseManagerImpl();
+      const notifications = [];
+      m.setViewObserver({ onStateChanged: s => notifications.push(s) });
+
+      // 1회차
+      m.addPoint(1, 0, 0); m.addPoint(2, 100, 0);
+      m.tick(); m.tick(); m.tick(); // → SELECTED
+      m.tick(); m.tick(); m.tick(); // → IDLE
+      assert(m.getCurrentStateType() === 0, '1회차 사이클 완료 후 IDLE');
+
+      // 2회차
+      m.tick(); m.tick(); m.tick(); // → SELECTED (포인트 여전히 존재)
+      m.tick(); m.tick(); m.tick(); // → IDLE
+      assert(m.getCurrentStateType() === 0, '2회차 사이클 완료 후 IDLE');
+
+      assert(notifications.length === 8,
+        `2회 사이클 총 전환 횟수 8회: ${notifications.length}회`);
+    }
+
+    {
+      // 손가락을 SELECTING 도달 직전에 떼는 시나리오
+      const m = new ChooseManagerImpl();
+      m.addPoint(1, 0, 0);
+      m.addPoint(2, 100, 0);
+      m.tick(); // IDLE → SELECTING
+      m.removePoint(1); // 즉시 IDLE 복귀
+      m.removePoint(2);
+      assert(m.getCurrentStateType() === 0, '빠른 손가락 떼기: IDLE 복귀');
+      assert(m.getPoints().length === 0, '빠른 손가락 떼기 후 포인트 0');
+    }
+
+    {
+      // 포인트 id 혼합 (터치 ID + 마우스 ID 공존)
+      const m = new ChooseManagerImpl();
+      m.addPoint(0, 10, 20);   // 터치 ID 0
+      m.addPoint(1000, 200, 300); // 마우스 ID 1000
+      m.tick(); // → SELECTING
+      assert(m.getCurrentStateType() === 1, '터치 ID + 마우스 ID 혼합: SELECTING 전환');
+    }
+
+    /* ═══════════════════════════════════════════
+       결과 요약
+    ═══════════════════════════════════════════ */
     const summary = document.getElementById('summary');
     const total = passed + failed;
     summary.innerHTML = `
       <hr style="border-color:#444;margin:20px 0">
-      결과: <span class="${failed === 0 ? 'pass' : 'fail'}">${passed}/${total} 통과</span>
-      ${failed > 0 ? `<br><span class="fail">${failed}개 실패</span>` : ''}
+      결과: <span class="${failed === 0 ? 'pass' : 'fail'}">${passed} / ${total} 통과</span>
+      ${failed > 0 ? `<br><span class="fail">❌ ${failed}개 실패</span>` : '<br><span class="pass">🎉 전체 통과!</span>'}
     `;
   </script>
 </body>
