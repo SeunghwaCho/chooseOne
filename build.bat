@@ -4,35 +4,35 @@ setlocal
 
 set RELEASE_DIR=release
 
-echo === Choose One ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ===
+echo === Choose One ºôµå ½ÃÀÛ ===
 echo.
 
-REM 1. TypeScript ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-echo [1/3] TypeScript ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½...
+REM 1. TypeScript ÄÄÆÄÀÏ
+echo [1/3] TypeScript ÄÄÆÄÀÏ Áß...
 call npm run build
 if %errorlevel% neq 0 (
-    echo [ï¿½ï¿½ï¿½ï¿½] TypeScript ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    echo [½ÇÆÐ] TypeScript ÄÄÆÄÀÏ ½ÇÆÐ
     exit /b 1
 )
 
-REM 2. release ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­
-echo [2/3] release ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­...
+REM 2. release Æú´õ ÃÊ±âÈ­
+echo [2/3] release Æú´õ ÃÊ±âÈ­...
 if exist %RELEASE_DIR% rd /s /q %RELEASE_DIR%
 md %RELEASE_DIR%
 
-REM 3. ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¼ï¿½ ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½
-echo [3/3] ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½...
+REM 3. ¹èÆ÷ ÇÊ¼ö ÆÄÀÏ¸¸ º¹»ç
+echo [3/3] ÆÄÀÏ º¹»ç Áß...
 copy index.html %RELEASE_DIR%\index.html > nul
 md %RELEASE_DIR%\dist
 copy dist\bundle.js %RELEASE_DIR%\dist\bundle.js > nul
 
 echo.
-echo === ï¿½ï¿½ï¿½ï¿½ ï¿½Ï·ï¿½ ===
-echo ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: .\%RELEASE_DIR%\
+echo === ºôµå ¿Ï·á ===
+echo ºôµå °á°ú: .\%RELEASE_DIR%\
 echo.
-echo ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½:
+echo ½ÇÇà ¹æ¹ý:
 echo   cd %RELEASE_DIR%
 echo   python -m http.server 8001
-echo   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: http://localhost:8001
+echo   ºê¶ó¿ìÀú: http://localhost:8001
 
 endlocal
