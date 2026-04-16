@@ -3,8 +3,8 @@ import type { CPoint } from '../model/CPoint.js';
 
 /** 선택 중 상태 뷰: 동심원 펄스 + 손가락 개수 + 카운트다운 타이머 */
 export class SelectingView extends BaseView {
-  // REQUIRED_TICKS(4) × TICK_INTERVAL(800ms) = 3200ms
-  private static readonly HOLD_MS = 3200;
+  // REQUIRED_TICKS(3) × TICK_INTERVAL(800ms) = 2400ms
+  private static readonly HOLD_MS = 2400;
 
   draw(points: CPoint[], animTick: number, _selectedPoint: CPoint | null, stateElapsedMs: number): void {
     this.drawBackground('#050510');
