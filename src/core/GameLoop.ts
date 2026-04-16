@@ -67,6 +67,16 @@ export class GameLoop {
     requestAnimationFrame(this.loop.bind(this));
   }
 
+  /** 현재 틱 진행률 반환 (0.0 ~ 1.0) */
+  getTickProgress(): number {
+    return this.tickAccumulator / GameLoop.TICK_INTERVAL;
+  }
+
+  /** 틱 누산기 리셋 (손가락 변경으로 타이머 재시작 시 호출) */
+  resetTickAccumulator(): void {
+    this.tickAccumulator = 0;
+  }
+
   getFrameCount(): number {
     return this.frameCount;
   }

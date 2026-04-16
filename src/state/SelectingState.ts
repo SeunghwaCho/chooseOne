@@ -30,9 +30,13 @@ export class SelectingState implements IState {
   }
 
   updatePointList(points: CPoint[]): void {
-    // 포인트 감소 시 즉시 대기 상태로
     if (points.length < 2) {
+      // 손가락이 2개 미만이면 대기 상태로
       this.ctx.transit(StateType.IDLE);
+    } else {
+      // 손가락 추가·제거로 개수가 바뀌었으면 타이머 리셋
+      // (같은 상태로 재진입 → init() 호출 → tickCount = 0)
+      this.ctx.transit(StateType.SELECTING);
     }
   }
 

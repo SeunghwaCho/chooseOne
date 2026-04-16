@@ -101,21 +101,10 @@ function bindInputEvents(
 function main(): void {
   const { canvas, ctx } = initCanvas();
   const manager = new ChooseManagerImpl();
-  const viewManager = new ViewManager(ctx);
 
-  // 상태 변경 시 뷰 알림 연결
-  manager.setViewObserver(viewManager);
-
-  // 리사이즈 시 뷰도 갱신
-  window.addEventListener('resize', () => {
-    viewManager.resize(canvas.width, canvas.height);
-  });
-
-  // 게임 루프 시작
+  // GameLoop를 먼저 생성 후 ViewManager에 전달 (tickProgress 접근 필요)
   const gameLoop = new GameLoop(
-    () => {
-      manager.tick();
-    },
+    () => { manager.tick(); },
     (animTick) => {
       viewManager.draw(
         manager.getPoints(),
@@ -124,6 +113,16 @@ function main(): void {
       );
     }
   );
+
+  const viewManager = new ViewManager(ctx, gameLoop);
+
+  // 상태 변경 시 뷰 알림 연결
+  manager.setViewObserver(viewManager);
+
+  // 리사이즈 시 뷰도 갱신
+  window.addEventListener('resize', () => {
+    viewManager.resize(canvas.width, canvas.height);
+  });
 
   bindInputEvents(canvas, manager);
   gameLoop.start();

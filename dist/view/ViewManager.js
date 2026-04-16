@@ -4,8 +4,9 @@ import { AlertingView } from './AlertingView.js';
 import { SelectedView } from './SelectedView.js';
 /** 현재 상태에 맞는 뷰를 선택하고 렌더링 담당 */
 export class ViewManager {
-    constructor(ctx) {
+    constructor(ctx, gameLoop) {
         this.ctx = ctx;
+        this.gameLoop = gameLoop;
         this.currentStateType = 0 /* StateType.IDLE */;
         this.selectedView = new SelectedView(ctx);
         this.views = [
@@ -20,14 +21,17 @@ export class ViewManager {
         if (state === 3 /* StateType.SELECTED */) {
             this.selectedView.onInit();
         }
+        // SELECTING 재진입(손가락 변경) 포함 모든 상태 전환 시 틱 누산기 리셋
+        if (state === 1 /* StateType.SELECTING */) {
+            this.gameLoop.resetTickAccumulator();
+        }
     }
     /** 매 프레임 현재 상태 뷰 렌더링 */
     draw(points, animTick, selectedPoint) {
         const view = this.views[this.currentStateType];
-        // 캔버스 크기 동기화
         const canvas = this.ctx.canvas;
         view.resize(canvas.width, canvas.height);
-        view.draw(points, animTick, selectedPoint);
+        view.draw(points, animTick, selectedPoint, this.gameLoop.getTickProgress());
         this.drawTouchPointsInfo();
     }
     /** 우측 상단: 최대 동시 터치 지점 표시 */

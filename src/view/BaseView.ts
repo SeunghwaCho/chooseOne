@@ -131,5 +131,16 @@ export abstract class BaseView {
     );
   }
 
-  abstract draw(points: CPoint[], animTick: number, selectedPoint?: CPoint | null): void;
+  /**
+   * @param points        현재 터치 포인트 목록
+   * @param animTick      애니메이션 틱 (0~20 진동)
+   * @param selectedPoint 선택된 포인트 (SELECTED 상태에서만 유효)
+   * @param tickProgress  현재 게임 틱 진행률 (0.0~1.0, 800ms 기준)
+   */
+  abstract draw(
+    points: CPoint[],
+    animTick: number,
+    selectedPoint: CPoint | null,
+    tickProgress: number
+  ): void;
 }

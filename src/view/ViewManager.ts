@@ -5,6 +5,7 @@ import { IdleView } from './IdleView.js';
 import { SelectingView } from './SelectingView.js';
 import { AlertingView } from './AlertingView.js';
 import { SelectedView } from './SelectedView.js';
+import type { GameLoop } from '../core/GameLoop.js';
 import type { CPoint } from '../model/CPoint.js';
 
 /** 현재 상태에 맞는 뷰를 선택하고 렌더링 담당 */
@@ -13,7 +14,10 @@ export class ViewManager implements ViewObserver {
   private currentStateType: StateType = StateType.IDLE;
   private selectedView: SelectedView;
 
-  constructor(private ctx: CanvasRenderingContext2D) {
+  constructor(
+    private ctx: CanvasRenderingContext2D,
+    private gameLoop: GameLoop
+  ) {
     this.selectedView = new SelectedView(ctx);
     this.views = [
       new IdleView(ctx),
@@ -28,15 +32,18 @@ export class ViewManager implements ViewObserver {
     if (state === StateType.SELECTED) {
       this.selectedView.onInit();
     }
+    // SELECTING 재진입(손가락 변경) 포함 모든 상태 전환 시 틱 누산기 리셋
+    if (state === StateType.SELECTING) {
+      this.gameLoop.resetTickAccumulator();
+    }
   }
 
   /** 매 프레임 현재 상태 뷰 렌더링 */
   draw(points: CPoint[], animTick: number, selectedPoint: CPoint | null): void {
     const view = this.views[this.currentStateType];
-    // 캔버스 크기 동기화
     const canvas = this.ctx.canvas;
     view.resize(canvas.width, canvas.height);
-    view.draw(points, animTick, selectedPoint);
+    view.draw(points, animTick, selectedPoint, this.gameLoop.getTickProgress());
     this.drawTouchPointsInfo();
   }
 

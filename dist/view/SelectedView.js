@@ -15,10 +15,10 @@ export class SelectedView extends BaseView {
         // 매번 랜덤으로 모드 선택
         this.mode = Math.random() < 0.5 ? 'CENTER' : 'HOLE';
     }
-    draw(points, animTick, selectedPoint) {
+    draw(points, animTick, selectedPoint, _tickProgress) {
         this.displayTick++;
         this.drawBackground('#020208');
-        this.drawUnselectedPoints(points, selectedPoint ?? null);
+        this.drawUnselectedPoints(points, selectedPoint);
         if (selectedPoint) {
             if (this.mode === 'CENTER') {
                 this.drawCenterMode(selectedPoint, animTick);
