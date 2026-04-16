@@ -3,7 +3,7 @@ import type { CPoint } from '../model/CPoint.js';
 
 /** 대기 상태 뷰: 안내 메시지 + 터치 포인트 + 손가락 개수 피드백 */
 export class IdleView extends BaseView {
-  draw(points: CPoint[], animTick: number, _selectedPoint: CPoint | null, _tickProgress: number): void {
+  draw(points: CPoint[], animTick: number, _selectedPoint: CPoint | null, _stateElapsedMs: number): void {
     this.drawBackground();
     this.drawInstructions(animTick, points.length);
     this.drawTouchPoints(points);

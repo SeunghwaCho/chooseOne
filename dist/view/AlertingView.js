@@ -1,7 +1,7 @@
 import { BaseView } from './BaseView.js';
 /** 알림 상태 뷰: 선택 직전 강조 플래시 효과 */
 export class AlertingView extends BaseView {
-    draw(points, animTick, selectedPoint, _tickProgress) {
+    draw(points, animTick, selectedPoint, _stateElapsedMs) {
         const flashAlpha = (animTick / 20) * 0.3;
         this.drawBackground('#050510');
         // 전체 화면 플래시

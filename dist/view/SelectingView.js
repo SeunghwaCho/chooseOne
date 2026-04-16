@@ -1,10 +1,11 @@
 import { BaseView } from './BaseView.js';
 /** 선택 중 상태 뷰: 동심원 펄스 + 손가락 개수 + 카운트다운 타이머 */
 export class SelectingView extends BaseView {
-    draw(points, animTick, _selectedPoint, tickProgress) {
+    draw(points, animTick, _selectedPoint, stateElapsedMs) {
         this.drawBackground('#050510');
         this.drawPulsingPoints(points, animTick);
-        this.drawCountdownTimer(points.length, tickProgress);
+        const progress = Math.min(stateElapsedMs / SelectingView.HOLD_MS, 1.0);
+        this.drawCountdownTimer(points.length, progress);
     }
     /** 각 포인트에 펄스하는 동심원 + 번호 */
     drawPulsingPoints(points, animTick) {
@@ -60,3 +61,5 @@ export class SelectingView extends BaseView {
         this.drawCenteredText(guide, cx, cy + ringR + 28, `${Math.round(this.width * 0.028)}px sans-serif`, count < 2 ? 'rgba(255,120,120,0.9)' : 'rgba(180,180,255,0.8)');
     }
 }
+// REQUIRED_TICKS(4) × TICK_INTERVAL(800ms) = 3200ms
+SelectingView.HOLD_MS = 3200;

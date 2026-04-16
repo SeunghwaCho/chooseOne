@@ -13,6 +13,7 @@ export class ViewManager implements ViewObserver {
   private views: BaseView[];
   private currentStateType: StateType = StateType.IDLE;
   private selectedView: SelectedView;
+  private stateEnterTime = 0; // 현재 상태 진입 시각 (ms)
 
   constructor(
     private ctx: CanvasRenderingContext2D,
@@ -29,6 +30,7 @@ export class ViewManager implements ViewObserver {
 
   onStateChanged(state: StateType): void {
     this.currentStateType = state;
+    this.stateEnterTime = Date.now(); // 상태 진입 시각 기록
     if (state === StateType.SELECTED) {
       this.selectedView.onInit();
     }
@@ -45,7 +47,7 @@ export class ViewManager implements ViewObserver {
     // canvas.width/height 는 물리 픽셀, 뷰에는 논리 픽셀(CSS px) 전달
     const { logicalW, logicalH } = this.logicalSize();
     view.resize(logicalW, logicalH);
-    view.draw(points, animTick, selectedPoint, this.gameLoop.getTickProgress());
+    view.draw(points, animTick, selectedPoint, Date.now() - this.stateEnterTime);
     this.drawTouchPointsInfo(logicalW);
   }
 

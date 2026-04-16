@@ -1,7 +1,7 @@
 import { BaseView } from './BaseView.js';
 /** 대기 상태 뷰: 안내 메시지 + 터치 포인트 + 손가락 개수 피드백 */
 export class IdleView extends BaseView {
-    draw(points, animTick, _selectedPoint, _tickProgress) {
+    draw(points, animTick, _selectedPoint, _stateElapsedMs) {
         this.drawBackground();
         this.drawInstructions(animTick, points.length);
         this.drawTouchPoints(points);

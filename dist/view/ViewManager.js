@@ -8,6 +8,7 @@ export class ViewManager {
         this.ctx = ctx;
         this.gameLoop = gameLoop;
         this.currentStateType = 0 /* StateType.IDLE */;
+        this.stateEnterTime = 0; // 현재 상태 진입 시각 (ms)
         this.selectedView = new SelectedView(ctx);
         this.views = [
             new IdleView(ctx),
@@ -18,6 +19,7 @@ export class ViewManager {
     }
     onStateChanged(state) {
         this.currentStateType = state;
+        this.stateEnterTime = Date.now(); // 상태 진입 시각 기록
         if (state === 3 /* StateType.SELECTED */) {
             this.selectedView.onInit();
         }
@@ -32,7 +34,7 @@ export class ViewManager {
         // canvas.width/height 는 물리 픽셀, 뷰에는 논리 픽셀(CSS px) 전달
         const { logicalW, logicalH } = this.logicalSize();
         view.resize(logicalW, logicalH);
-        view.draw(points, animTick, selectedPoint, this.gameLoop.getTickProgress());
+        view.draw(points, animTick, selectedPoint, Date.now() - this.stateEnterTime);
         this.drawTouchPointsInfo(logicalW);
     }
     /** 우측 상단: 최대 동시 터치 지점 표시 */

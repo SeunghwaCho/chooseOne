@@ -20,7 +20,7 @@ export class SelectedView extends BaseView {
     this.mode = Math.random() < 0.5 ? 'CENTER' : 'HOLE';
   }
 
-  draw(points: CPoint[], animTick: number, selectedPoint: CPoint | null, _tickProgress: number): void {
+  draw(points: CPoint[], animTick: number, selectedPoint: CPoint | null, _stateElapsedMs: number): void {
     this.displayTick++;
     this.drawBackground('#020208');
     this.drawUnselectedPoints(points, selectedPoint);

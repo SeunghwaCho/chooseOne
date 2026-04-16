@@ -3,10 +3,14 @@ import type { CPoint } from '../model/CPoint.js';
 
 /** 선택 중 상태 뷰: 동심원 펄스 + 손가락 개수 + 카운트다운 타이머 */
 export class SelectingView extends BaseView {
-  draw(points: CPoint[], animTick: number, _selectedPoint: CPoint | null, tickProgress: number): void {
+  // REQUIRED_TICKS(4) × TICK_INTERVAL(800ms) = 3200ms
+  private static readonly HOLD_MS = 3200;
+
+  draw(points: CPoint[], animTick: number, _selectedPoint: CPoint | null, stateElapsedMs: number): void {
     this.drawBackground('#050510');
     this.drawPulsingPoints(points, animTick);
-    this.drawCountdownTimer(points.length, tickProgress);
+    const progress = Math.min(stateElapsedMs / SelectingView.HOLD_MS, 1.0);
+    this.drawCountdownTimer(points.length, progress);
   }
 
   /** 각 포인트에 펄스하는 동심원 + 번호 */

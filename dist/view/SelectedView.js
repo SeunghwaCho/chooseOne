@@ -15,7 +15,7 @@ export class SelectedView extends BaseView {
         // 매번 랜덤으로 모드 선택
         this.mode = Math.random() < 0.5 ? 'CENTER' : 'HOLE';
     }
-    draw(points, animTick, selectedPoint, _tickProgress) {
+    draw(points, animTick, selectedPoint, _stateElapsedMs) {
         this.displayTick++;
         this.drawBackground('#020208');
         this.drawUnselectedPoints(points, selectedPoint);
