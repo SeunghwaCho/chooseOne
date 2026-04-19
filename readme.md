@@ -73,6 +73,12 @@ IDLE → SELECTING → ALERTING → SELECTED → IDLE
 - **ALERTING**: 선택 직전 강조 애니메이션
 - **SELECTED**: 당첨자 표시 (2.4초 후 IDLE로 복귀)
 
+## 아키텍처 다이어그램
+
+![Architecture](docs/architecture.png)
+
+> PlantUML 소스: [`docs/architecture.puml`](docs/architecture.puml)
+
 ## 기술 스택
 
 - TypeScript 5
