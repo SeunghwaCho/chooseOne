@@ -1,0 +1,259 @@
+@startuml chooseOne Architecture
+
+title chooseOne - 클래스 다이어그램
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam packageFontSize 14
+skinparam linetype ortho
+
+' ─── Enums & Interfaces ───────────────────────────────────────
+package "state" {
+
+  enum StateType {
+    IDLE = 0
+    SELECTING = 1
+    ALERTING = 2
+    SELECTED = 3
+  }
+
+  interface StateContext {
+    +transit(state: StateType): void
+    +getPoints(): CPoint[]
+    +selectRandomPoint(): CPoint | null
+  }
+
+  interface IState {
+    +init(): void
+    +tick(): void
+    +updatePointList(points: CPoint[]): void
+  }
+
+  class IdleState {
+    -ctx: StateContext
+    +init(): void
+    +tick(): void
+    +updatePointList(points: CPoint[]): void
+  }
+
+  class SelectingState {
+    -{static} HOLD_MS: number = 1200
+    -ctx: StateContext
+    -enterTime: number
+    +init(): void
+    +tick(): void
+    +updatePointList(points: CPoint[]): void
+  }
+
+  class AlertingState {
+    -{static} ALERT_TICKS: number = 1
+    -ctx: StateContext
+    -tickCount: number
+    +init(): void
+    +tick(): void
+    +updatePointList(points: CPoint[]): void
+  }
+
+  class SelectedState {
+    -{static} DISPLAY_TICKS: number = 3
+    -ctx: StateContext
+    -tickCount: number
+    +init(): void
+    +tick(): void
+    +updatePointList(points: CPoint[]): void
+  }
+
+  IState <|.. IdleState
+  IState <|.. SelectingState
+  IState <|.. AlertingState
+  IState <|.. SelectedState
+}
+
+' ─── Model ────────────────────────────────────────────────────
+package "model" {
+
+  class CPoint {
+    +id: number
+    +x: number
+    +y: number
+    +color: string
+    +colorIndex: number
+    +distanceTo(other: CPoint): number
+  }
+}
+
+' ─── Manager ──────────────────────────────────────────────────
+package "manager" {
+
+  interface ViewObserver {
+    +onStateChanged(state: StateType): void
+  }
+
+  interface ChooseManager {
+    +transit(state: StateType): void
+    +getPoints(): CPoint[]
+    +selectRandomPoint(): CPoint | null
+    +getSelectedPoint(): CPoint | null
+    +getCurrentStateType(): StateType
+    +addPoint(id, x, y): void
+    +updatePoint(id, x, y): void
+    +removePoint(id): void
+    +tick(): void
+    +setViewObserver(observer: ViewObserver): void
+  }
+
+  class ChooseManagerImpl {
+    -{static} COLOR_TABLE: string[]
+    -states: IState[]
+    -currentStateType: StateType
+    -points: Map<number, CPoint>
+    -selectedPoint: CPoint | null
+    -viewObserver: ViewObserver | null
+    -colorUsage: Map<number, number>
+    +transit(state: StateType): void
+    +getPoints(): CPoint[]
+    +selectRandomPoint(): CPoint | null
+    +getSelectedPoint(): CPoint | null
+    +getCurrentStateType(): StateType
+    +addPoint(id, x, y): void
+    +updatePoint(id, x, y): void
+    +removePoint(id): void
+    +tick(): void
+    +setViewObserver(observer: ViewObserver): void
+    -findAvailableColorIndex(): number
+  }
+
+  ChooseManager <|.. ChooseManagerImpl
+  StateContext <|.. ChooseManagerImpl
+  ChooseManagerImpl "1" *-- "4" IState : manages
+  ChooseManagerImpl "1" o-- "0..*" CPoint : points
+  ChooseManagerImpl --> ViewObserver : notifies
+  ChooseManagerImpl --> StateType : uses
+}
+
+' ─── View ─────────────────────────────────────────────────────
+package "view" {
+
+  abstract class BaseView {
+    #ctx: CanvasRenderingContext2D
+    #width: number
+    #height: number
+    #drawBackground(color): void
+    #drawCircle(x,y,radius,color,lineWidth,alpha): void
+    #fillCircle(x,y,radius,color,alpha): void
+    #drawConcentricCircles(x,y,baseRadius,count,gap,color): void
+    #drawRadialLines(x,y,length,color,degreeStep): void
+    #drawCenteredText(text,x,y,font,color,alpha): void
+    #drawGlowText(text,x,y,font,color,glowColor): void
+    #drawPointLabel(point,emoji): void
+    +resize(width,height): void
+    +{abstract} draw(points,animTick,selectedPoint,stateElapsedMs): void
+  }
+
+  class IdleView {
+    +draw(points,animTick,selectedPoint,stateElapsedMs): void
+    -drawInstructions(count): void
+    -drawFingerCountBadge(count): void
+    -drawTouchPoints(points): void
+  }
+
+  class SelectingView {
+    -{static} HOLD_MS: number = 1200
+    +draw(points,animTick,selectedPoint,stateElapsedMs): void
+    -drawPulsingPoints(points,animTick): void
+    -drawCountdownTimer(points,elapsed): void
+  }
+
+  class AlertingView {
+    +draw(points,animTick,selectedPoint,stateElapsedMs): void
+    -drawAlertPoints(points,selectedPoint,animTick): void
+    -drawAlertText(animTick): void
+  }
+
+  class SelectedView {
+    -mode: DisplayMode
+    -displayTick: number
+    +draw(points,animTick,selectedPoint,stateElapsedMs): void
+    +onInit(): void
+    +setMode(mode): void
+    -drawUnselectedPoints(points,selectedPoint): void
+    -drawCenterMode(selectedPoint,animTick): void
+    -drawHoleMode(selectedPoint,animTick): void
+    -drawWinnerAnnouncement(selectedPoint): void
+    -getColorName(color): string
+  }
+
+  class ViewManager {
+    -views: BaseView[]
+    -currentStateType: StateType
+    -selectedView: SelectedView
+    -stateEnterTime: number
+    +onStateChanged(state: StateType): void
+    +draw(points,animTick,selectedPoint): void
+    +logicalSize(): \{width,height\}
+  }
+
+  BaseView <|-- IdleView
+  BaseView <|-- SelectingView
+  BaseView <|-- AlertingView
+  BaseView <|-- SelectedView
+  ViewObserver <|.. ViewManager
+  ViewManager "1" *-- "4" BaseView : views
+  ViewManager --> StateType : uses
+}
+
+' ─── Core ─────────────────────────────────────────────────────
+package "core" {
+
+  class GameLoop {
+    -{static} TICK_INTERVAL: number = 800
+    -{static} ANIM_TICK_MAX: number = 20
+    -{static} ANIM_UPDATE_MS: number = 33
+    -running: boolean
+    -lastTimestamp: number
+    -tickAccumulator: number
+    -frameCount: number
+    -animTickValue: number
+    -animDirection: number
+    -onTick: TickCallback
+    -onRender: RenderCallback
+    +start(): void
+    +stop(): void
+    +getTickProgress(): number
+    +resetTickAccumulator(): void
+    +getFrameCount(): number
+    -loop(timestamp): void
+  }
+}
+
+' ─── Entry Point ──────────────────────────────────────────────
+package "main" {
+
+  class Application <<(M,orchid) main.ts>> {
+    -canvas: HTMLCanvasElement
+    -manager: ChooseManagerImpl
+    -viewManager: ViewManager
+    -gameLoop: GameLoop
+    +initCanvas(): void
+    +bindInputEvents(): void
+    +main(): void
+  }
+
+  Application --> ChooseManagerImpl : creates & drives
+  Application --> ViewManager : creates
+  Application --> GameLoop : creates & starts
+}
+
+' ─── Cross-package dependencies ──────────────────────────────
+GameLoop --> ChooseManager : onTick → tick()
+GameLoop --> ViewManager : onRender → draw()
+ViewManager --> GameLoop : getTickProgress()
+ChooseManagerImpl --> CPoint : creates
+
+' ─── State Transition Note ───────────────────────────────────
+note bottom of ChooseManagerImpl
+  상태 전이:
+  IDLE ─(2+터치)→ SELECTING ─(1200ms 유지)→ ALERTING ─(800ms)→ SELECTED ─(2.4초)→ IDLE
+end note
+
+@enduml
